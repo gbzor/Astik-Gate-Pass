@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Astik GatePass – Records</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="adminrecords.css" />
+</head>
+<body>
+  <div class="layout">
+
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="https://www.adnu.edu.ph/wp-content/uploads/2014/03/AdNU-Seal-1.png"
+             alt="Ateneo de Naga University seal" />
+        <span>Astik GatePass</span>
+      </div>
+
+      <nav class="nav">
+        <a href="admindashboard.html" class="nav-btn">Dashboard</a>
+        <a href="adminapplicants.html" class="nav-btn">Applicants</a>
+        <a href="adminrecords.html" class="nav-btn active">Records</a>
+        <a href="#" class="nav-btn">Campus Parking</a>
+      </nav>
+
+      <a href="#" class="signout">Signout</a>
+    </aside>
+
+    <main class="main">
+      <h1>Records</h1>
+
+      <div class="toolbar">
+        <div class="search">
+          <input type="text" placeholder="Search Records" aria-label="Search records" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M20 20l-3.5-3.5" />
+          </svg>
+        </div>
+
+        <select class="category" aria-label="Category">
+          <option>Category</option>
+          <option>Student</option>
+          <option>Faculty</option>
+        </select>
+      </div>
+
+      <section class="records-card">
+        <div class="list" id="records-list"></div>
+      </section>
+    </main>
+
+  </div>
+
+    <script src="auth.js"></script>
+  <script src="Applicants data.js"></script>
+  <script>
+    requireLogin();
+    document.querySelector(".signout").addEventListener("click", (e) => {
+      e.preventDefault();
+      logout();
+    });
+
+    const list = document.getElementById("records-list");
+    const searchInput = document.querySelector(".search input");
+    const categorySelect = document.querySelector(".category");
+
+    function typeOf(applicant) {
+      const t = (applicant.affiliation || "").toLowerCase();
+      return t.charAt(0).toUpperCase() + t.slice(1); // "STUDENT" -> "Student"
+    }
+
+    function getApproved() {
+      const decisions = getDecisions();
+      return Object.keys(APPLICANTS)
+        .filter((id) => decisions[id] === "approved")
+        .map((id) => ({ id, ...APPLICANTS[id] }));
+    }
+
+    function render() {
+      const query = searchInput.value.trim().toLowerCase();
+      const chosen = categorySelect.value;
+
+      const rows = getApproved().filter((a) => {
+        const matchesName = a.name.toLowerCase().includes(query);
+        const matchesType = chosen === "Category" || typeOf(a) === chosen;
+        return matchesName && matchesType;
+      });
+
+      list.innerHTML = "";
+
+      if (rows.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "name";
+        empty.textContent = "No approved applicants yet.";
+        list.appendChild(empty);
+        return;
+      }
+
+      rows.forEach((a) => {
+        const record = document.createElement("div");
+        record.className = "record";
+
+        const name = document.createElement("span");
+        name.className = "name";
+        name.textContent = a.name;
+
+        const type = document.createElement("span");
+        type.className = "type";
+        type.textContent = typeOf(a);
+
+        const view = document.createElement("button");
+        view.className = "view";
+        view.textContent = "View";
+        view.addEventListener("click", () => {
+          window.location.href = "adminrecorddetails.html?id=" + a.id;
+        });
+
+        record.append(name, type, view);
+        list.appendChild(record);
+      });
+    }
+
+    searchInput.addEventListener("input", render);
+    categorySelect.addEventListener("change", render);
+    render();
+  </script>
+</body>
+</html>
