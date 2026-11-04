@@ -38,4 +38,23 @@ export const env = Object.freeze({
     email: (process.env.SEED_ADMIN_EMAIL || '').trim().toLowerCase(),
     password: process.env.SEED_ADMIN_PASSWORD || '',
   }),
+
+  // Email notifications via SMTP (e.g. Brevo or Gmail App Password).
+  // If host is empty, emails will print to the console during development.
+  smtp: Object.freeze({
+    host: process.env.SMTP_HOST || '',
+    port: Number(process.env.SMTP_PORT) || 587,
+    secure: process.env.SMTP_SECURE === 'true',
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.MAIL_FROM || 'Astik Gate Pass <noreply@adnu.edu.ph>',
+  }),
+
+  // SMS notifications. Defaults to 'console' provider for free local development.
+  sms: Object.freeze({
+    provider: process.env.SMS_PROVIDER || 'console',
+    apiUrl: process.env.SMS_API_URL || '',
+    apiKey: process.env.SMS_API_KEY || '',
+    from: process.env.SMS_FROM || '',
+  }),
 });
