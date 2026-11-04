@@ -26,7 +26,8 @@ Check the current free-tier limits before choosing.
 | firstName, lastName | varchar(60) | |
 | email | varchar(254) **unique** | Stored lowercase |
 | schoolId | varchar(20) **unique** | Student ID or Employee ID, stored uppercase |
-| passwordHash | varchar(100) | bcrypt hash. Never return it from the API |
+| passwordHash | text | bcrypt hash. Never return it from the API |
+| contactNumber | varchar(13), nullable | Philippine mobile in the format `+639XXXXXXXXX`. Agreed with the SMS developer. Not sent to the frontend yet (`publicUser` is a whitelist) |
 | createdAt, updatedAt | timestamptz | |
 
 ## Functions in `src/db/index.js`
@@ -39,4 +40,15 @@ Check the current free-tier limits before choosing.
 | `users.create(data)` | the new user, with `id`, `createdAt`, `updatedAt` filled in |
 | `users.update(id, patch)` | the updated user, or `null` if not found |
 
-New tables (vehicles, applications, parking) will be added here as those features are built.
+## Other tables (created in `src/db/schema.sql`, functions still to come)
+
+`admin_accounts` (one row per admin user; created automatically by `users.create` for role `admin`),
+`vehicles`, `campus_stickers` (the sticker applications; approved/rejected by an admin account),
+`parking_areas`, `parking_records`. Relationships and rules are documented inside `schema.sql`.
+
+## Setup
+
+1. Put your connection string in `.env` as `DATABASE_URL=...` (never commit it).
+2. Run `src/db/schema.sql` once in the Supabase/Neon SQL editor.
+3. `npm test` loads `.env`, so it runs against that database. The tests create the user
+   `juan@gbox.adnu.edu.ph`, so use a separate test database, or delete that row before running again.
