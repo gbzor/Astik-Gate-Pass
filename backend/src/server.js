@@ -1,6 +1,7 @@
 import { env } from './config/env.js';
 import { createApp } from './app.js';
 import { seed } from './db/seed.js';
+import { pool } from './db/index.js';
 
 await seed();
 
@@ -10,5 +11,8 @@ const server = createApp().listen(env.port, () => {
 
 // Finish open requests before stopping (Ctrl+C or a host restart).
 for (const signal of ['SIGINT', 'SIGTERM']) {
-  process.on(signal, () => server.close(() => process.exit(0)));
+  process.on(signal, () => server.close(async () => {
+    await pool.end(); // release database connections cleanly
+    process.exit(0);
+  }));
 }

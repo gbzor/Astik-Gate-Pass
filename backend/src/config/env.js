@@ -13,12 +13,20 @@ if (!jwtSecret || jwtSecret.length < 32) {
   throw new Error('JWT_SECRET is missing or shorter than 32 characters. Copy .env.example to .env and fill it in.');
 }
 
+// The database connection string (Supabase/Neon). Without it nothing can be saved.
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  throw new Error('DATABASE_URL is missing. Copy it from your Supabase/Neon dashboard into .env (see .env.example).');
+}
+
 export const env = Object.freeze({
   isProd: process.env.NODE_ENV === 'production',
   port: Number(process.env.PORT) || 3000,
   // Only these frontend origins may call the API with cookies.
   corsOrigins: list('CORS_ORIGINS', 'http://localhost:5500,http://127.0.0.1:5500'),
   trustProxy: process.env.TRUST_PROXY === 'true',
+
+  databaseUrl,
 
   jwtSecret,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '8h',
