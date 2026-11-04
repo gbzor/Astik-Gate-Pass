@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Astik GatePass – Admin Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="AdminLogin.css" />
+</head>
+<body>
+  <main class="card">
+    <div class="logo">
+      <img src="https://www.adnu.edu.ph/wp-content/uploads/2014/03/AdNU-Seal-1.png" alt="Ateneo de Naga University seal" onerror="this.style.display='none'" />
+    </div>
+
+    <p class="school">Ateneo de Naga University</p>
+    <h1>Astik GatePass</h1>
+
+    <form id="login-form" novalidate>
+      <div id="login-error" class="error" role="alert" hidden></div>
+
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="name@adnu.edu.ph" autocomplete="username" />
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password" />
+      </div>
+
+      <div class="row">
+        <label class="remember">
+          <input type="checkbox" id="remember" /> Remember me
+        </label>
+        <a href="#" class="forgot">Forgot password?</a>
+      </div>
+
+      <button type="submit">Sign in</button>
+    </form>
+  </main>
+
+  <script src="auth.js"></script>
+</body>
+</html>
