@@ -6,11 +6,12 @@ This is the **starter**: the server foundation plus authentication (sign-up, use
 logout, current user) and role-based access control. Vehicles, sticker applications, admin records
 and parking are built on top of it next.
 
-**Stack (all free):** Node.js 22.9+ · Express 5 · Zod validation · bcrypt · JWT in HttpOnly cookies ·
-Helmet · express-rate-limit
+**Stack (all free):** Node.js 22.9+ · Express 5 · PostgreSQL (`pg`) · Zod validation · bcrypt ·
+JWT in HttpOnly cookies · Helmet · express-rate-limit
 
-> **Database:** not connected yet. `src/db/index.js` keeps data **in memory**, so it resets on every
-> restart. The database developer replaces it by following [docs/DATABASE_CONTRACT.md](docs/DATABASE_CONTRACT.md).
+> **Database:** PostgreSQL on a free hosted plan (Supabase or Neon, no card needed). The tables are in
+> `src/db/schema.sql` and all queries are in `src/db/index.js`. Both belong to the database developer;
+> see [docs/DATABASE_CONTRACT.md](docs/DATABASE_CONTRACT.md).
 
 ## Run it locally
 
@@ -28,14 +29,30 @@ Helmet · express-rate-limit
    node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
    ```
 4. In `.env`, set `SEED_ADMIN_PASSWORD` to a password of 12+ characters for the first admin account.
-5. Start the server:
+5. In `.env`, set `DATABASE_URL` to the connection string the database developer gives you (privately,
+   never through GitHub or chat groups). The tables must already exist: `src/db/schema.sql` is run once
+   in the Supabase/Neon SQL editor.
+6. Start the server:
    ```powershell
    npm run dev
    ```
    You should see `Astik Gate Pass API running at http://localhost:3000/api`.
-6. Open <http://localhost:3000/api/health> in your browser. You should see `{"status":"ok",...}`.
+7. Open <http://localhost:3000/api/health> in your browser. You should see
+   `{"status":"ok","database":"ok",...}`. If `database` says `unreachable`, check `DATABASE_URL`.
 
-Run the automated tests anytime with `npm test`.
+## Automated tests
+
+The tests **erase all data** in the database they use, so they never touch `DATABASE_URL`.
+
+1. Create a second, empty free database (for example a second Neon project) just for tests.
+2. Put its connection string in `.env` as `TEST_DATABASE_URL=...`.
+3. Run:
+   ```powershell
+   npm test
+   ```
+   The tests create the tables, clear them, and should end with `fail 0`. They can be run again anytime.
+
+If `TEST_DATABASE_URL` is missing, or is the same as `DATABASE_URL`, the tests stop before touching anything.
 
 ## Folder layout
 
@@ -51,8 +68,9 @@ src/
   middleware/               auth + roles, validation, rate limits, errors
   validators/               Zod schemas for every input
   utils/                    HttpError, publicUser (safe response shapes)
-  db/index.js               data access; replace with the real database
-  db/seed.js                creates the first admin
+  db/index.js               Postgres queries (database developer)
+  db/schema.sql             tables, relationships and rules (database developer)
+  db/seed.js                creates the first admin at startup
 test/                       automated API tests (npm test)
 docs/API.md                 endpoints for the frontend team
 docs/DATABASE_CONTRACT.md   tables and functions for the database developer
@@ -73,13 +91,20 @@ docs/DATABASE_CONTRACT.md   tables and functions for the database developer
 - Session JWT in an `HttpOnly`, `SameSite=Strict` cookie (`Secure` in production). Every request rechecks that the account still exists and is active.
 - Separate student/faculty and admin login pages. Sign-up can never create an admin.
 - Zod validates every input and drops unknown fields.
-- Helmet security headers, CORS limited to your frontend, a 100 KB JSON limit, and rate limits (10 auth attempts per 15 min).
-- Errors never expose stack traces.
+- Helmet security headers, CORS limited to your frontend, a 100 KB JSON limit, and rate limits
+  (300 requests per 15 min overall; 10 **failed** sign-ins or sign-ups per 15 min, so a shared campus IP isn't locked out).
+- Errors never expose stack traces or database details.
+- `GET /api/health` reports whether the database is reachable.
 
 ## Before deploying
 
-- Set `NODE_ENV=production`, use HTTPS, and set `CORS_ORIGINS` to the real frontend URL.
+- Set `NODE_ENV=production`, use HTTPS, and set `CORS_ORIGINS` to the real frontend URL
+  (the server refuses to start in production without it).
 - Set `TRUST_PROXY=true` on hosts like Render or Railway.
+- Serve the frontend and the API from the **same site**. The login cookie is `SameSite=Strict`, so browsers
+  won't send it if the frontend is on `*.vercel.app` and the API on `*.onrender.com`. The simplest free option
+  is one Render free web service where Express also serves the `frontend/` files. (A custom domain would also
+  work but costs money.) Decide this with the team before deploying.
 
 ## Maps (not in this starter)
 

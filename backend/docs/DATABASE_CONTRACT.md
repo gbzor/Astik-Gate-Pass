@@ -50,5 +50,5 @@ Check the current free-tier limits before choosing.
 
 1. Put your connection string in `.env` as `DATABASE_URL=...` (never commit it).
 2. Run `src/db/schema.sql` once in the Supabase/Neon SQL editor.
-3. `npm test` loads `.env`, so it runs against that database. The tests create the user
-   `juan@gbox.adnu.edu.ph`, so use a separate test database, or delete that row before running again.
+3. `npm test` uses `TEST_DATABASE_URL`, a separate empty database, never `DATABASE_URL`. It runs
+   `schema.sql` there and **erases every table** before each run, so it can be repeated.
