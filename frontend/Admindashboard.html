@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Astik GatePass – Admin Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="admindashboard.css" />
+</head>
+<body>
+  <div class="layout">
+
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="https://www.adnu.edu.ph/wp-content/uploads/2014/03/AdNU-Seal-1.png"
+             alt="Ateneo de Naga University seal" />
+        <span>Astik GatePass</span>
+      </div>
+
+      <nav class="nav">
+        <a href="admindashboard.html" class="nav-btn active">Dashboard</a>
+        <a href="adminapplicants.html" class="nav-btn">Applicants</a>
+        <a href="adminrecords.html" class="nav-btn">Records</a>
+        <a href="#" class="nav-btn">Campus Parking</a>
+      </nav>
+
+      <a href="#" class="signout">Signout</a>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <h1>Dashboard</h1>
+
+        <div class="profile">
+          <div class="profile-text">
+            <strong id="admin-name">Name</strong>
+            <span>Administrator</span>
+          </div>
+          <div class="avatar"></div>
+        </div>
+      </header>
+
+       <section class="stats">
+        <div class="stat">
+          <div class="stat-text">
+            <h2>Pending</h2>
+            <p id="stat-pending">0</p>
+          </div>
+          <svg class="icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="24" cy="24" r="21" />
+            <path d="M24 12v12l7 6" />
+          </svg>
+        </div>
+
+        <div class="stat">
+          <div class="stat-text">
+            <h2>Approved</h2>
+            <p id="stat-approved">0</p>
+          </div>
+          <svg class="icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="24" cy="24" r="21" />
+            <path d="M14 25l7 7 13-14" />
+          </svg>
+        </div>
+
+        <div class="stat stat-total">
+          <div class="stat-text">
+            <h2>Total Applicants</h2>
+            <p id="stat-total">0</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="activity">
+        <h3>Recent Activity</h3>
+        <ul id="activity-list" class="activity-list"></ul>
+      </section>
+    </main>
+
+  </div>
+
+    <script src="auth.js"></script>
+  <script src="Applicants data.js"></script>
+  <script>
+    requireLogin();
+    const session = getSession();
+    if (session) document.getElementById("admin-name").textContent = session.name;
+    document.querySelector(".signout").addEventListener("click", (e) => {
+      e.preventDefault();
+      logout();
+    });
+
+    // ----- stats -----
+    const decisions = getDecisions();
+    const ids = Object.keys(APPLICANTS);
+    document.getElementById("stat-total").textContent = ids.length;
+    document.getElementById("stat-approved").textContent =
+      ids.filter((id) => decisions[id] === "approved").length;
+    document.getElementById("stat-pending").textContent =
+      ids.filter((id) => !decisions[id]).length;
+
+    // ----- recent activity -----
+    const list = document.getElementById("activity-list");
+    const activity = getActivity().slice(0, 10);
+
+    function formatTime(ms) {
+      return new Date(ms).toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      });
+    }
+
+    if (activity.length === 0) {
+      const empty = document.createElement("li");
+      empty.className = "activity-empty";
+      empty.textContent = "No activity yet.";
+      list.appendChild(empty);
+    }
+
+    activity.forEach((entry) => {
+      const item = document.createElement("li");
+      item.className = "activity-item";
+
+      const text = document.createElement("span");
+      text.className = "activity-text";
+
+      const badge = document.createElement("span");
+      badge.className = "badge " + entry.status;
+      badge.textContent = entry.status === "approved" ? "Approved" : "Rejected";
+
+      text.append(badge, " " + entry.name);
+
+      const time = document.createElement("span");
+      time.className = "activity-time";
+      time.textContent = formatTime(entry.at);
+
+      item.append(text, time);
+      list.appendChild(item);
+    });
+  </script>
+</body>
+</html>
