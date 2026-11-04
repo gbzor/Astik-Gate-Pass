@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Astik GatePass – Record Details</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="adminrecorddetails.css" />
+</head>
+<body>
+  <div class="layout">
+
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="https://www.adnu.edu.ph/wp-content/uploads/2014/03/AdNU-Seal-1.png"
+             alt="Ateneo de Naga University seal" />
+        <span>Astik GatePass</span>
+      </div>
+
+      <nav class="nav">
+        <a href="admindashboard.html" class="nav-btn">Dashboard</a>
+        <a href="adminapplicants.html" class="nav-btn">Applicants</a>
+        <a href="adminrecords.html" class="nav-btn active">Records</a>
+        <a href="#" class="nav-btn">Campus Parking</a>
+      </nav>
+
+      <a href="#" class="signout">Signout</a>
+    </aside>
+
+    <main class="main">
+
+      <header class="person">
+        <div class="avatar"></div>
+        <div class="person-text">
+          <strong id="header-name">Name</strong>
+        </div>
+      </header>
+
+      <section class="block">
+        <h2>Applicant Information</h2>
+        <div class="grid">
+          <div class="item"><span class="label">Name</span><span class="value" id="f-name"></span></div>
+          <div class="item"><span class="label">ID Number</span><span class="value" id="f-idNumber"></span></div>
+          <div class="item"><span class="label">Email</span><span class="value value-link" id="f-email"></span></div>
+          <div class="item"><span class="label">Course</span><span class="value" id="f-course"></span></div>
+          <div class="item"><span class="label">Contact No.</span><span class="value" id="f-contact"></span></div>
+          <div class="item"><span class="label">Affiliation</span><span class="value" id="f-affiliation"></span></div>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2>Vehicle Information</h2>
+        <div class="grid">
+          <div class="item"><span class="label">Vehicle Type</span><span class="value" id="f-vehicleType"></span></div>
+          <div class="item"><span class="label">Brand</span><span class="value" id="f-brand"></span></div>
+          <div class="item"><span class="label">Plate No.</span><span class="value" id="f-plateNo"></span></div>
+          <div class="item"><span class="label">Sticker restriction</span><span class="value" id="f-stickerRestriction"></span></div>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2>Uploaded Requirements</h2>
+        <div class="grid">
+          <div class="item">
+            <span class="req-title">Driver's License</span>
+            <a href="#" class="req-link" data-file="driversLicense" data-action="view">[View]</a>
+            <a href="#" class="req-link" data-file="driversLicense" data-action="download">[Download]</a>
+          </div>
+          <div class="item">
+            <span class="req-title">Official Receipt</span>
+            <a href="#" class="req-link" data-file="officialReceipt" data-action="view">[View]</a>
+            <a href="#" class="req-link" data-file="officialReceipt" data-action="download">[Download]</a>
+          </div>
+          <div class="item">
+            <span class="req-title">School ID</span>
+            <a href="#" class="req-link" data-file="schoolId" data-action="view">[View]</a>
+            <a href="#" class="req-link" data-file="schoolId" data-action="download">[Download]</a>
+          </div>
+          <div class="item">
+            <span class="req-title">Certificate of Registration</span>
+            <a href="#" class="req-link" data-file="certificateOfRegistration" data-action="view">[View]</a>
+            <a href="#" class="req-link" data-file="certificateOfRegistration" data-action="download">[Download]</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="grid">
+          <div class="item"><span class="req-title">Sticker Validation</span><span class="value" id="f-stickerValidation"></span></div>
+          <div class="item"><span class="req-title">Sticker Restriction</span><span class="value" id="f-stickerRestriction2"></span></div>
+        </div>
+      </section>
+
+      <a href="adminrecords.html" class="back">Back</a>
+    </main>
+
+  </div>
+
+  <script src="auth.js"></script>
+  <script src="Applicants data.js"></script>
+  <script>
+    requireLogin();
+    document.querySelector(".signout").addEventListener("click", (e) => {
+      e.preventDefault();
+      logout();
+    });
+
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+    const applicant = APPLICANTS[id];
+    const NONE = "—";
+
+    function setText(elId, text) {
+      document.getElementById(elId).textContent = text || NONE;
+    }
+
+    document.getElementById("header-name").textContent =
+      applicant ? applicant.name : "Applicant";
+
+    ["name", "idNumber", "email", "course", "contact", "affiliation",
+     "vehicleType", "brand", "plateNo", "stickerRestriction", "stickerValidation"].forEach((key) => {
+      setText("f-" + key, applicant && applicant[key]);
+    });
+    setText("f-stickerRestriction2", applicant && applicant.stickerRestriction);
+
+    document.querySelectorAll(".req-link").forEach((link) => {
+      const url = applicant && applicant.requirements[link.dataset.file];
+      if (url) {
+        link.href = url;
+        if (link.dataset.action === "view") link.target = "_blank";
+        else link.setAttribute("download", "");
+      } else {
+        link.addEventListener("click", (e) => {
+          e.preventDefault();
+          alert("No file has been uploaded for this requirement yet.");
+        });
+      }
+    });
+  </script>
+</body>
+</html>
