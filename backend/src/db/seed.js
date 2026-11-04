@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { env } from '../config/env.js';
 import { BCRYPT_COST } from '../config/constants.js';
 import { users } from './index.js';
+import { HttpError } from '../utils/httpError.js';
 
 export async function seed() {
   const { email, password } = env.seedAdmin;
@@ -13,14 +14,24 @@ export async function seed() {
   }
   if (await users.findByEmail(email)) return;
 
-  await users.create({
-    role: 'admin',
-    status: 'active',
-    firstName: 'System',
-    lastName: 'Admin',
-    email,
-    schoolId: 'ADMIN-0001',
-    passwordHash: await bcrypt.hash(password, BCRYPT_COST),
-  });
-  console.log(`[seed] Admin account ready: ${email}`);
+  try {
+    await users.create({
+      role: 'admin',
+      status: 'active',
+      firstName: 'System',
+      lastName: 'Admin',
+      email,
+      schoolId: 'ADMIN-0001',
+      passwordHash: await bcrypt.hash(password, BCRYPT_COST),
+    });
+    console.log(`[seed] Admin account ready: ${email}`);
+  } catch (err) {
+    // ADMIN-0001 is already taken (SEED_ADMIN_EMAIL was changed after the first run).
+    // Keep the server running instead of crashing at startup.
+    if (err instanceof HttpError && err.status === 409) {
+      console.warn('[seed] No admin created: an account with ID ADMIN-0001 already exists. Sign in with that admin.');
+      return;
+    }
+    throw err;
+  }
 }

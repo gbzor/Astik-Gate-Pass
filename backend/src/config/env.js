@@ -19,8 +19,15 @@ if (!databaseUrl) {
   throw new Error('DATABASE_URL is missing. Copy it from your Supabase/Neon dashboard into .env (see .env.example).');
 }
 
+const isProd = process.env.NODE_ENV === 'production';
+
+// In production the frontend's real address must be set; the localhost default is for development only.
+if (isProd && !process.env.CORS_ORIGINS) {
+  throw new Error('CORS_ORIGINS is missing. In production, set it to the real frontend URL (https://...).');
+}
+
 export const env = Object.freeze({
-  isProd: process.env.NODE_ENV === 'production',
+  isProd,
   port: Number(process.env.PORT) || 3000,
   // Only these frontend origins may call the API with cookies.
   corsOrigins: list('CORS_ORIGINS', 'http://localhost:5500,http://127.0.0.1:5500'),

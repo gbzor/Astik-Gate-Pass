@@ -1,9 +1,23 @@
 // Run with: npm test
 // Starts the real app on a random port and calls it over HTTP.
+//
+// The tests ERASE every table before they start, so they only run against a
+// separate, throwaway database set in TEST_DATABASE_URL, never DATABASE_URL.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+
+const testDb = process.env.TEST_DATABASE_URL;
+if (!testDb) {
+  throw new Error('TEST_DATABASE_URL is not set. Add a separate, empty test database to .env (see .env.example). '
+    + 'The tests erase all data, so never point it at the real database.');
+}
+if (testDb === process.env.DATABASE_URL) {
+  throw new Error('TEST_DATABASE_URL is the same as DATABASE_URL. Use a separate test database: the tests erase all data.');
+}
 
 // Settings for the test run only (set before the app is imported).
+process.env.DATABASE_URL = testDb;
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-secret-that-is-at-least-32-characters-long';
 process.env.ALLOWED_EMAIL_DOMAINS = 'adnu.edu.ph';
@@ -13,18 +27,25 @@ process.env.SEED_ADMIN_PASSWORD = 'Admin-Password-123!';
 const { createApp } = await import('../src/app.js');
 const { seed } = await import('../src/db/seed.js');
 const { requireAuth, requireRole } = await import('../src/middleware/auth.js');
+const { pool, users } = await import('../src/db/index.js');
 
 let server;
 let base;
 
 before(async () => {
+  // Fresh start every run: create the tables if needed, then empty them.
+  await pool.query(await readFile(new URL('../src/db/schema.sql', import.meta.url), 'utf8'));
+  await pool.query('TRUNCATE parking_records, campus_stickers, parking_areas, vehicles, admin_accounts, users CASCADE');
   await seed();
   server = createApp().listen(0);
   await new Promise((resolve) => server.once('listening', resolve));
   base = `http://127.0.0.1:${server.address().port}/api`;
 });
 
-after(() => server.close());
+after(async () => {
+  await new Promise((resolve) => server.close(resolve));
+  await pool.end(); // close database connections so the test run can exit
+});
 
 // Small helper: sends JSON and returns { status, body, cookie }.
 async function call(method, path, { body, cookie } = {}) {
@@ -162,6 +183,62 @@ test('requireRole blocks the wrong role', async () => {
   } finally {
     s.close();
   }
+});
+
+test('a disabled account is signed out and cannot sign in', async () => {
+  const login = await call('POST', '/auth/login', { body: { email: student.email, password: student.password } });
+  assert.equal(login.status, 200);
+
+  const user = await users.findByEmail(student.email);
+  await users.update(user.id, { status: 'disabled' });
+  try {
+    // The old session stops working at once, and a new sign-in is refused.
+    assert.equal((await call('GET', '/auth/me', { cookie: login.cookie })).status, 401);
+    const again = await call('POST', '/auth/login', { body: { email: student.email, password: student.password } });
+    assert.equal(again.status, 403);
+  } finally {
+    await users.update(user.id, { status: 'active' });
+  }
+});
+
+test('session cookie is scoped and not readable by page scripts', async () => {
+  const login = await call('POST', '/auth/login', { body: { email: student.email, password: student.password } });
+  assert.match(login.setCookie, /Path=\/api/i);
+  assert.match(login.setCookie, /HttpOnly/i);
+  assert.doesNotMatch(login.setCookie, /Max-Age|Expires/i, 'cookie should end when the browser closes');
+});
+
+test('broken or oversized JSON gets a clean 400', async () => {
+  const broken = await fetch(`${base}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{"email": ',
+  });
+  assert.equal(broken.status, 400);
+
+  const huge = await fetch(`${base}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'a@adnu.edu.ph', password: 'x'.repeat(200 * 1024) }),
+  });
+  assert.equal(huge.status, 400);
+  assert.doesNotMatch(await huge.text(), /stack|at \w+ \(/i, 'no internal details in the error');
+});
+
+test('security headers are set and CORS only trusts the frontend', async () => {
+  const ok = await fetch(`${base}/health`, { headers: { Origin: 'http://localhost:5500' } });
+  assert.equal(ok.headers.get('access-control-allow-origin'), 'http://localhost:5500');
+  assert.equal(ok.headers.get('access-control-allow-credentials'), 'true');
+  assert.equal(ok.headers.get('x-content-type-options'), 'nosniff');
+  assert.equal(ok.headers.get('x-powered-by'), null);
+
+  const evil = await fetch(`${base}/health`, { headers: { Origin: 'https://evil.example' } });
+  assert.equal(evil.headers.get('access-control-allow-origin'), null);
+});
+
+test('health check reports the database connection', async () => {
+  const res = await call('GET', '/health');
+  assert.equal(res.body.database, 'ok');
 });
 
 test('unknown routes return 404 JSON', async () => {

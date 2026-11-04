@@ -47,11 +47,14 @@ Validation errors (400) also list the fields to highlight:
 ## Public
 
 ### `GET /health`
-Checks the server is running. → `200 { "status": "ok", "time": "2026-11-04T..." }`
+Checks the server and its database connection.
+→ `200 { "status": "ok", "database": "ok", "time": "2026-11-04T..." }`
+→ `503 { "status": "degraded", "database": "unreachable", ... }` if the database is down.
 
 ## Authentication
 
-Sign-in and sign-up are limited to **10 attempts per 15 minutes** per IP.
+Sign-in and sign-up allow **10 failed attempts per 15 minutes** per IP (then `429`).
+Successful sign-ins don't count, so students sharing the campus Wi-Fi aren't locked out.
 
 ### `POST /auth/register`
 Creates a **student** or **faculty** account. Admin accounts can't be created here.

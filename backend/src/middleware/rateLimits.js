@@ -15,9 +15,12 @@ export const apiLimiter = rateLimit({
 });
 
 // Stricter limit for sign-in and sign-up, to slow down password guessing.
+// Only FAILED attempts count. Everyone on the campus Wi-Fi shares one public IP,
+// so counting successful logins would lock the whole school out after 10 sign-ins.
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
+  skipSuccessfulRequests: true,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
   skip,
