@@ -64,7 +64,8 @@ src/
   config/constants.js       roles, statuses, bcrypt cost
   routes/index.js           mounts every feature's routes under /api
   routes/auth.routes.js     /api/auth/* URLs
-  controllers/              request handlers
+  controllers/              request handlers (HTTP only: read request, call a service, respond)
+  services/                 business logic; the ONLY layer that talks to the database
   middleware/               auth + roles, validation, rate limits, errors
   validators/               Zod schemas for every input
   utils/                    HttpError, publicUser (safe response shapes)
@@ -78,11 +79,14 @@ docs/DATABASE_CONTRACT.md   tables and functions for the database developer
 
 ## Adding a feature
 
-1. Add `routes/<feature>.routes.js` and `controllers/<feature>.controller.js`.
+Layers: **routes → controllers → services → db**. Controllers never import `db/`; they call a service.
+`test/layers.test.js` fails if a file outside `services/` imports the database.
+
+1. Add `routes/<feature>.routes.js`, `controllers/<feature>.controller.js` and `services/<feature>.service.js`.
 2. Add a Zod schema in `validators/` and use `validateBody(schema)` on every POST/PATCH.
 3. Protect routes with `requireAuth` and `requireRole('admin')` (or `'student'`, `'faculty'`).
-4. Check ownership in the controller, so users can only touch their own records.
-5. Add the data functions to `db/index.js` and document them in `docs/DATABASE_CONTRACT.md`.
+4. Check ownership in the service, so users can only touch their own records.
+5. Add the data functions to `db/index.js`, call them only from the service, and document them in `docs/DATABASE_CONTRACT.md`.
 6. Mount the router in `routes/index.js`, document it in `docs/API.md`, and add tests.
 
 ## Security built in

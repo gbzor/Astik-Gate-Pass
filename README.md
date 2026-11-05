@@ -16,7 +16,7 @@ Astik-Gate-Pass/
 │                      Admin pages so far: login, dashboard, records list, record details.
 │
 ├── backend/           REST API (Node.js + Express) and the database layer.
-│   ├── src/           Server code: routes, controllers, security middleware, validation.
+│   ├── src/           Server code: routes → controllers → services → db, plus security middleware and validation.
 │   │   └── db/        PostgreSQL tables (schema.sql) and queries (index.js).
 │   ├── test/          Automated API tests (npm test).
 │   ├── docs/          API.md for the frontend, DATABASE_CONTRACT.md for the database.
