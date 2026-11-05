@@ -1,6 +1,7 @@
 # Database contract (for the database developer)
 
-The backend reads and writes data only through `src/db/index.js`. Right now that file stores
+The backend reads and writes data only through `src/db/index.js`, and only the files in
+`src/services/` call it (controllers go through a service). Right now that file stores
 everything in memory, so it's lost on restart. To connect a real database, replace each function
 body with real queries. Nothing else in the backend needs to change.
 

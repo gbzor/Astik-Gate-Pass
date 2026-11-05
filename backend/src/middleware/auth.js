@@ -1,7 +1,7 @@
 // Login sessions and role-based access control (RBAC).
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
-import { users } from '../db/index.js';
+import { getActiveUser } from '../services/auth.service.js';
 import { HttpError } from '../utils/httpError.js';
 
 export const SESSION_COOKIE = 'gp_session';
@@ -41,8 +41,8 @@ export async function requireAuth(req, res, next) {
     throw new HttpError(401, 'Your session has expired. Please sign in again.');
   }
 
-  const user = await users.findById(payload.sub);
-  if (!user || user.status !== 'active') {
+  const user = await getActiveUser(payload.sub);
+  if (!user) {
     clearSessionCookie(res);
     throw new HttpError(401, 'Please sign in.');
   }

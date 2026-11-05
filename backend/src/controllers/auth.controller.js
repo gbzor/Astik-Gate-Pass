@@ -1,51 +1,19 @@
-import bcrypt from 'bcryptjs';
-import { BCRYPT_COST } from '../config/constants.js';
-import { users } from '../db/index.js';
+// Auth request handlers. HTTP only: read the request, call the service, send the response.
+// All logic and database access lives in services/auth.service.js.
 import { clearSessionCookie, setSessionCookie } from '../middleware/auth.js';
-import { HttpError } from '../utils/httpError.js';
+import * as authService from '../services/auth.service.js';
 import { publicUser } from '../utils/present.js';
 
-// Compared against when the email doesn't exist, so a wrong email takes as long
-// as a wrong password and attackers can't tell which emails are registered.
-const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', BCRYPT_COST);
-
-// POST /api/auth/register: students and faculty only. Admins are seeded, never signed up.
+// POST /api/auth/register: students and faculty only.
 export async function register(req, res) {
-  const data = req.body;
-
-  if ((await users.findByEmail(data.email)) || (await users.findBySchoolId(data.schoolId))) {
-    throw new HttpError(409, 'An account with this email or ID number already exists.');
-  }
-
-  const user = await users.create({
-    role: data.role,
-    status: 'active',
-    firstName: data.firstName,
-    lastName: data.lastName,
-    email: data.email,
-    schoolId: data.schoolId,
-    passwordHash: await bcrypt.hash(data.password, BCRYPT_COST),
-  });
-
+  const user = await authService.registerUser(req.body);
   res.status(201).json({ user: publicUser(user), message: 'Account created. You can now sign in.' });
 }
 
-// Shared sign-in logic. `portal` decides which roles may use that login page,
-// so an admin can't sign in on the student page and a student can't use the admin page.
+// Shared by both login pages; `portal` picks which roles that page accepts.
 async function signIn(req, res, portal) {
   const { email, password } = req.body;
-  const user = await users.findByEmail(email);
-  const passwordOk = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
-  const portalOk = user && (portal === 'admin' ? user.role === 'admin' : user.role !== 'admin');
-
-  if (!user || !passwordOk || !portalOk) {
-    console.warn(`[auth] Failed ${portal} sign-in from ${req.ip}`);
-    throw new HttpError(401, 'Incorrect email or password.');
-  }
-  if (user.status !== 'active') {
-    throw new HttpError(403, 'This account is disabled. Please contact the Security Office.');
-  }
-
+  const user = await authService.signIn({ email, password, portal, ip: req.ip });
   setSessionCookie(res, user);
   res.json({ user: publicUser(user) });
 }
